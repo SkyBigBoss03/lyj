@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jt.order.mapper.OrderMapper">
+	
+	
+	<!--进行关联封装  -->
+	<select id="findOrderById" resultMap="orderRM">
+		select * from tb_order where order_id = #{id}
+	</select>
+	
+	<resultMap type="Order" id="orderRM" autoMapping="true">
+		<id column="order_id" property="orderId"/>
+		
+		<!--负责一对一封装  -->
+		<association property="orderShipping" javaType="OrderShipping" column="order_id" 
+		select="findOrderShipping"/>
+		
+		<collection property="orderItems" ofType="OrderItem" column="order_id" 
+		select="findOrders"/>
+	</resultMap>
+	
+	
+	<select id="findOrderShipping" resultType="OrderShipping">
+		select * from tb_order_shipping where order_id = #{id}
+	</select>
+	
+	<select id="findOrders" resultType="OrderItem">
+		select * from tb_order_item where order_id = #{id}
+	</select>
+	
+	<update id="updatePayment">
+		update tb_order set status = 6 where created &lt; #{date}
+	</update>
+</mapper>

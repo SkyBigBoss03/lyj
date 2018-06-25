@@ -1,0 +1,95 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop" 
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+	http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd
+	http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.0.xsd 
+	http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.0.xsd
+	http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.0.xsd">
+	
+	<!--开启包扫描  -->
+	<context:component-scan base-package="com.jt"/>
+	
+	<!--动态的引入properties文件  -->
+	<!-- <context:property-placeholder location="classpath:/hello*.properties"/> -->
+	<bean id="propertyPlaceholder" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="locations" >
+			<list>
+				<value>classpath:/properties/jdbc.properties</value>
+				<value>classpath:/properties/redis.properties</value>
+				<!--添加MQ配置  -->		
+				<value>classpath:/properties/rabbitmq.properties</value>		
+			</list>
+		</property>
+	</bean>
+	
+	<!--配置数据源  -->
+	<!-- 配置连接池 -->
+	<bean id="dataSource" class="com.jolbox.bonecp.BoneCPDataSource" destroy-method="close">
+		<!-- 数据库驱动 -->
+		<property name="driverClass" value="${jdbc.driver}" />
+		<!-- 相应驱动的jdbcUrl -->
+		<property name="jdbcUrl" value="${jdbc.url}" />
+		<!-- 数据库的用户名 -->
+		<property name="username" value="${jdbc.username}" />
+		<!-- 数据库的密码 -->
+		<property name="password" value="${jdbc.password}" />
+		<!-- 检查数据库连接池中空闲连接的间隔时间，单位是分，默认值：240，如果要取消则设置为0 -->
+		<property name="idleConnectionTestPeriod" value="60" />
+		<!-- 连接池中未使用的链接最大存活时间，单位是分，默认值：60，如果要永远存活设置为0 -->
+		<property name="idleMaxAge" value="30" />
+		<!-- 每个分区最大的连接数 -->
+		<property name="maxConnectionsPerPartition" value="150" />
+		<!-- 每个分区最小的连接数 -->
+		<property name="minConnectionsPerPartition" value="5" />
+	</bean>
+	
+	
+	<!-- 
+		只要开启了注解,需要在各个方法中添加注解
+	<tx:annotation-driven/> 
+	-->
+	
+	<!--定义事务管理器  
+		要求id:transactionManager  -->
+	<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource"/>
+	</bean>
+	
+	<!--定义事务通知  
+		propagation="REQUIRED" 当前的数据库操作必须添加事务
+		spring中有默认的事务策略:
+			1.如果是runtimeException或error则自动的回滚事务
+			2.如果是检查异常,则不管
+		
+		propagation="SUPPORTS" 表示事务支持的
+		如果方法需要事务,则查询方法也有事务
+		如果方法不需事务.则查询不会添加事务
+		一个方法处理多个业务逻辑时用到!!!
+	-->
+	<tx:advice id="txAdvice" transaction-manager="transactionManager">
+		<tx:attributes>
+			<tx:method name="save*" propagation="REQUIRED" rollback-for="Exception"/>
+			<tx:method name="update*" propagation="REQUIRED" rollback-for="Exception"/>
+			<tx:method name="delete*" propagation="REQUIRED" rollback-for="Exception"/>
+			<tx:method name="find*" propagation="SUPPORTS"  read-only="true"/>
+			<tx:method name="select*" propagation="SUPPORTS" read-only="true"/>
+			<tx:method name="query*" propagation="SUPPORTS" read-only="true"/>
+			<tx:method name="*"  propagation="SUPPORTS" read-only="true"/>
+		</tx:attributes>
+	</tx:advice>
+	
+	<!--配置事务切面  
+		切入点表达式:控制业务层的所有方法
+		execution(返回值类型 包名.类名.方法名(参数列表))
+	-->
+	<aop:config>
+		<aop:pointcut expression="execution(* com.jt.order.service..*.*(..))" id="pc"/>
+		<aop:advisor advice-ref="txAdvice" pointcut-ref="pc"/>
+	</aop:config>
+
+</beans>

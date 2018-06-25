@@ -1,0 +1,13 @@
+  <dependencies>
+   		<!-- 消息队列 -->
+		<dependency>
+			<groupId>com.rabbitmq</groupId>
+			<artifactId>amqp-client</artifactId>
+			<version>3.5.1</version>
+		</dependency>
+		<dependency>
+		       <groupId>org.springframework.amqp</groupId>
+		       <artifactId>spring-rabbit</artifactId>
+		       <version>1.4.0.RELEASE</version>
+		</dependency>
+  </dependencies>
