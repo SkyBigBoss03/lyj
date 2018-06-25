@@ -2,4 +2,4 @@
 resource
 
 ##################################
-rabbitmq 
+rabbitmq  day 16
